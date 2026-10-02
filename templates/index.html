@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HW2B | Login</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      color: #20242c;
+    }
+    header {
+      padding: 20px 24px;
+      background: #293241;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      border-bottom: 4px solid #f59e0b;
+    }
+    main {
+      width: min(420px, calc(100% - 32px));
+      margin: 64px auto;
+      padding: 32px;
+      background: white;
+      border: 1px solid #d8dde5;
+      border-radius: 8px;
+    }
+    h1 { margin: 0 0 12px; font-size: 30px; }
+    .intro { margin: 0 0 28px; color: #586273; line-height: 1.5; }
+    label { display: block; margin: 20px 0 8px; font-weight: bold; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #8792a2;
+      border-radius: 4px;
+      font: inherit;
+    }
+    input:focus { outline: 3px solid #fbbf24; outline-offset: 2px; }
+    button {
+      width: 100%;
+      margin-top: 28px;
+      padding: 12px;
+      border: 0;
+      border-radius: 4px;
+      background: #f59e0b;
+      color: #20242c;
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background: #fbbf24; }
+    button:focus-visible { outline: 3px solid #293241; outline-offset: 3px; }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    #message { min-height: 24px; margin: 20px 0 0; line-height: 1.5; }
+    .error { color: #b42318; }
+    .success { color: #166534; }
+    footer { margin-top: 24px; font-size: 13px; color: #586273; }
+  </style>
+</head>
+<body>
+  <header>Juice Shop &middot; HW2B Login Demo</header>
+  <main>
+    <h1>Login</h1>
+    <p class="intro">Enter your email and password to sign in.</p>
+
+    <!-- Custom JavaScript displays validation messages; the server checks again. -->
+    <form id="loginForm" action="{{ url_for('login') }}" method="post" novalidate>
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" required maxlength="254"
+             autocomplete="username" placeholder="you@example.com">
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required minlength="8"
+             autocomplete="current-password" aria-describedby="passwordHint">
+      <small id="passwordHint">Use at least 8 characters.</small>
+
+      <button id="loginButton" type="submit">Log in</button>
+    </form>
+
+    <p id="message" role="status" aria-live="polite"></p>
+    <noscript>Enable JavaScript to use this login form.</noscript>
+    <footer>HW 2-B &middot; Login form demonstration</footer>
+  </main>
+
+  <script>
+    const form = document.getElementById("loginForm");
+    const message = document.getElementById("message");
+    const loginButton = document.getElementById("loginButton");
+
+    function validateLogin(email, password) {
+      if (!email || !password) {
+        return "Email and password are required.";
+      }
+      if (!email.includes("@") || email.length > 254) {
+        return "Enter an email containing @ (maximum 254 characters).";
+      }
+      if (Array.from(password).length < 8) {
+        return "Password must be at least 8 characters.";
+      }
+      if (new TextEncoder().encode(password).length > 72) {
+        return "Password must be no more than 72 UTF-8 bytes.";
+      }
+      return "";
+    }
+
+    function showMessage(text, successful = false) {
+      // Display messages as plain text, so they are not interpreted as HTML.
+      message.textContent = text;
+      message.className = successful ? "success" : "error";
+    }
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const error = validateLogin(email, password);
+
+      if (error) {
+        showMessage(error);
+        return;
+      }
+
+      loginButton.disabled = true;
+      showMessage("Checking credentials...");
+
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await response.json();
+
+        showMessage(data.message, response.ok);
+        if (response.ok) {
+          form.reset();
+        }
+      } catch (error) {
+        showMessage("Could not complete the request. Check that the Flask server is running.");
+      } finally {
+        loginButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
+
